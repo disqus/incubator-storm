@@ -7,15 +7,16 @@
     :implements [backtype.storm.scheduler.IScheduler]))
 
 (defn sort-slots [all-slots]
-  (let [split-up (vals (group-by first all-slots))]
-    (apply interleave-all split-up)
+  ; Creates a sequence of [[node, port], ...] ordered by node
+  (let [split-up (reverse (map reverse (vals (group-by first all-slots))))]
+    (reverse (apply interleave-all split-up))
     ))
 
 (defn get-alive-assigned-node+port->executors [cluster topology-id]
   (let [existing-assignment (.getAssignmentById cluster topology-id)
         executor->slot (if existing-assignment
                          (.getExecutorToSlot existing-assignment)
-                         {}) 
+                         {})
         executor->node+port (into {} (for [[^ExecutorDetails executor ^WorkerSlot slot] executor->slot
                                            :let [executor [(.getStartTask executor) (.getEndTask executor)]
                                                  node+port [(.getNodeId slot) (.getPort slot)]]]
